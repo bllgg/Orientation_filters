@@ -1,0 +1,11 @@
+//
+// Created by bllgg on 1/9/21.
+//
+
+#ifndef MADGWICK_TEST_MADGWICKAHRS_H
+#define MADGWICK_TEST_MADGWICKAHRS_H
+
+
+
+
+#endif //MADGWICK_TEST_MADGWICKAHRS_H
