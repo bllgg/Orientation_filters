@@ -44,6 +44,8 @@ int main() {
 //        MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
         for (int i = 0; i < 10; i++) {
             sensor_fusion.MadgwickAHRSupdate(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z);
+//            sensor_fusion.MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
+
         }
         float roll = sensor_fusion.get_roll();
         float pitch = sensor_fusion.get_pitch();
@@ -51,6 +53,8 @@ int main() {
         float *current_quaternioun;
         current_quaternioun = sensor_fusion.get_q();
 //        cout << roll << "," << pitch << "," << yaw <<endl;
+//        cout << roll << "," << pitch <<endl;
+
         cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << endl;
 //        cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << "\n" <<endl;
 
