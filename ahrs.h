@@ -18,20 +18,20 @@ public:
     /*==============================================================*/
     /*                  Constructor and Destructor                  */
     /*==============================================================*/
-    Madgwick(float beta_val);
+    Madgwick(double beta_val);
     ~Madgwick();
 
     /*==============================================================*/
     /*                       Public Functions                       */
     /*==============================================================*/
     //ret val   function name               parameters
-    void        MadgwickAHRSupdate          (float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
-    void        MadgwickAHRSupdateIMU       (float gx, float gy, float gz, float ax, float ay, float az);
-//    void        compute_orientation         (float *q);
-//    float*      quaternionMul               (float *q_1, float *q_2);
-//    float*      get_accel_jacobian          (float *q);
-//    float*      get_accel_function          (float *q, float *a);
-//    void        normalizeq                  (float *q);
+    void        MadgwickAHRSupdate          (double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz);
+    void        MadgwickAHRSupdateIMU       (double gx, double gy, double gz, double ax, double ay, double az);
+//    void        compute_orientation         (double *q);
+//    double*      quaternionMul               (double *q_1, double *q_2);
+//    double*      get_accel_jacobian          (double *q);
+//    double*      get_accel_function          (double *q, double *a);
+//    void        normalizeq                  (double *q);
 //    void        update_roll_and_pitch       ();
 //    void        get_mag_jacob               ();
 //    void        get_mag_func                ();
@@ -41,38 +41,38 @@ public:
     /*==============================================================*/
     /*                     Getters and Setters                      */
     /*==============================================================*/
-    float       get_roll                    (void);
+    double       get_roll                    (void);
     void        set_roll                    (int roll);
 
-    float       get_pitch                   (void);
+    double       get_pitch                   (void);
     void        set_pitch                   (int pitch);
 
-    float       get_yaw                     (void);
+    double       get_yaw                     (void);
     void        set_yaw                     (int yaw);
 
-    float       get_beta                    (void);
-    void        set_beta                    (float beta);
+    double       get_beta                    (void);
+    void        set_beta                    (double beta);
 
-    float*      get_q                       (void);
-    void        set_q                       (float q_0, float q_1, float q_2, float q_3);
+    double*      get_q                       (void);
+    void        set_q                       (double q_0, double q_1, double q_2, double q_3);
 
 private:
 
     /*==============================================================*/
     /*                      Private Variables                       */
     /*==============================================================*/
-    float      beta = 0.5;
-    float      q0 = 1.0 , q1 = 0.0 , q2 = 0.0, q3 = 0.0;
-    int        roll = 0, pitch = 0, yaw = 0;
-    float      sampleFreq = 10.0;
+    double      beta = 0.5;
+    double      q0 = 1.0 , q1 = 0.0 , q2 = 0.0, q3 = 0.0;
+    int         roll = 0, pitch = 0, yaw = 0;
+    double      sampleFreq = 10.0;
 
     /*==============================================================*/
     /*                      Private Functions                       */
     /*==============================================================*/
     //ret val   function name               parameters
-    float      radians_to_degrees          (float radian_val);
-    float      degrees_to_radians          (float degree_val);
-    float      invSqrt                     (float x);
+    double      radians_to_degrees          (double radian_val);
+    double      degrees_to_radians          (double degree_val);
+    double      invSqrt                     (double x);
 };
 
 #endif //MADGWICK_TEST_AHRS_H

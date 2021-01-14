@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include <math.h>
 
 #include "ahrs.h"
 using namespace std;
@@ -29,28 +30,37 @@ int main() {
             row.push_back(word);
         }
 //        cout << row[0] << "," << row[1] << endl;
-        float acc_x = (float)stof(row[0]);
-        float acc_y = (float)stof(row[1]);
-        float acc_z = (float)stof(row[2]);
+        double acc_x = (double)stod(row[0]);
+        double acc_y = (double)stod(row[1]);
+        double acc_z = (double)stod(row[2]);
+        acc_x = (int)(round(acc_x * 1000)) / 1000.0;
+        acc_y = (int)(round(acc_y * 1000)) / 1000.0;
+        acc_z = (int)(round(acc_z * 1000)) / 1000.0;
 
-        float gyr_x = (float)stof(row[3]);
-        float gyr_y = (float)stof(row[4]);
-        float gyr_z = (float)stof(row[5]);
+        double gyr_x = (double)stof(row[3]);
+        double gyr_y = (double)stof(row[4]);
+        double gyr_z = (double)stof(row[5]);
+        gyr_x = (int)(round(gyr_x * 1000)) / 1000.0;
+        gyr_y = (int)(round(gyr_y * 1000)) / 1000.0;
+        gyr_z = (int)(round(gyr_z * 1000)) / 1000.0;
 
-        float mag_x = (float)stof(row[6]);
-        float mag_y = (float)stof(row[7]);
-        float mag_z = (float)stof(row[8]);
+        double mag_x = (double)stof(row[6]);
+        double mag_y = (double)stof(row[7]);
+        double mag_z = (double)stof(row[8]);
+        mag_x = (int)(round(mag_x * 1000)) / 1000.0;
+        mag_y = (int)(round(mag_y * 1000)) / 1000.0;
+        mag_z = (int)(round(mag_z * 1000)) / 1000.0;
 
 //        MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 1; i++) {
             sensor_fusion.MadgwickAHRSupdate(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z);
 //            sensor_fusion.MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
 
         }
-        float roll = sensor_fusion.get_roll();
-        float pitch = sensor_fusion.get_pitch();
-        float yaw = sensor_fusion.get_yaw();
-        float *current_quaternioun;
+        double roll = sensor_fusion.get_roll();
+        double pitch = sensor_fusion.get_pitch();
+        double yaw = sensor_fusion.get_yaw();
+        double *current_quaternioun;
         current_quaternioun = sensor_fusion.get_q();
 //        cout << roll << "," << pitch << "," << yaw <<endl;
 //        cout << roll << "," << pitch <<endl;

@@ -11,7 +11,7 @@
 /*==============================================================*/
 /*                  Constructor and Destructor                  */
 /*==============================================================*/
-Madgwick::Madgwick(float beta_val){
+Madgwick::Madgwick(double beta_val){
     this->beta = beta_val;
 }
 
@@ -23,12 +23,12 @@ Madgwick::~Madgwick(){
 /*                       Public Functions                       */
 /*==============================================================*/
 
-void Madgwick::MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz) {
-    float recipNorm;
-    float s0, s1, s2, s3;
-    float qDot1, qDot2, qDot3, qDot4;
-    float hx, hy;
-    float _2q0mx, _2q0my, _2q0mz, _2q1mx, _2bx, _2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3;
+void Madgwick::MadgwickAHRSupdate(double gx, double gy, double gz, double ax, double ay, double az, double mx, double my, double mz) {
+    double recipNorm;
+    double s0, s1, s2, s3;
+    double qDot1, qDot2, qDot3, qDot4;
+    double hx, hy;
+    double _2q0mx, _2q0my, _2q0mz, _2q1mx, bx, _2bx, bz,_2bz, _4bx, _4bz, _2q0, _2q1, _2q2, _2q3, _2q0q2, _2q2q3, q0q0, q0q1, q0q2, q0q3, q1q1, q1q2, q1q3, q2q2, q2q3, q3q3, quat_det;
 
     // Use IMU algorithm if magnetometer measurement invalid (avoids NaN in magnetometer normalisation)
     if((mx == 0.0f) && (my == 0.0f) && (mz == 0.0f)) {
@@ -42,9 +42,9 @@ void Madgwick::MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float 
 
     // Rate of change of quaternion from gyroscope
     qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
-    qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
-    qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
-    qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
+    qDot2 = 0.5f * (q0 * gx - q2 * gz + q3 * gy);
+    qDot3 = 0.5f * (q0 * gy + q1 * gz - q3 * gx);
+    qDot4 = 0.5f * (q0 * gz - q1 * gy + q2 * gx);
 
     // Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
     if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
@@ -83,31 +83,77 @@ void Madgwick::MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float 
         q2q3 = q2 * q3;
         q3q3 = q3 * q3;
 
+        quat_det = 1.0 / (q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+
         // Reference direction of Earth's magnetic field
 //        hx = mx * q0q0 - _2q0my * q3 + _2q0mz * q2 + mx * q1q1 + _2q1 * my * q2 + _2q1 * mz * q3 - mx * q2q2 - mx * q3q3;
 //        hy = _2q0mx * q3 + my * q0q0 - _2q0mz * q1 + _2q1mx * q2 - my * q1q1 + my * q2q2 + _2q2 * mz * q3 - my * q3q3;
-        hx = mx * (1 - 2 * (q0q0 + q1q1)) + my * 2 * (q1q2 + q0q3) + mz * 2 * (q1q3 + q0q2);
-        hy = mx * 2 * (q1q2 - q0q3) + my * (1 - 2 * (q0q0 + q2q2)) + mz * 2 * (q2q3 + q0q1);
-        _2bx = 2.0f * sqrt(hx * hx + hy * hy);
+        hx = mx * (1 - 2 * quat_det * (q3 * q3 + q2 * q2)) + my * 2 * quat_det * (q1 * q2 + q0 * q3)      + mz * 2 * quat_det * (q1 * q3 + q0 * q2);
+        hy = mx * 2 * quat_det * (q1 * q2 + q0 * q3)       + my * (1 - 2 * quat_det *(q1 * q1 + q3 * q3)) + mz * 2 * quat_det * (q2 * q3 - q0 * q1);
+        bx = sqrt(hx * hx + hy * hy);
+        _2bx = 2.0f * bx;
 //        _2bz = -_2q0mx * q2 + _2q0my * q1 + mz * q0q0 + _2q1mx * q3 - mz * q1q1 + _2q2 * my * q3 - mz * q2q2 + mz * q3q3;
-        _2bz = 2.0f * (2 * mx * (q1q3 + q0q2) + 2 * my * (q2q3 + q0q1) + mz * (1 - 2 * (q0q0 + q3q3)));
+        bz = 2 * mx * quat_det * (q1 * q3 - q0 * q2) + 2 * my * quat_det * (q2 * q3 + q0 * q1) + mz * (1 - 2 * quat_det * (q1 * q1 + q2 * q2));
+        _2bz = 2.0f * bz;
         _4bx = 2.0f * _2bx;
         _4bz = 2.0f * _2bz;
 
+        double f_j_11, f_j_12, f_j_13, f_j_14,
+               f_j_21, f_j_22, f_j_23, f_j_24,
+               f_j_31, f_j_32, f_j_33, f_j_34,
+               f_j_41, f_j_42, f_j_43, f_j_44,
+               f_j_51, f_j_52, f_j_53, f_j_54,
+               f_j_61, f_j_62, f_j_63, f_j_64;
+
+        f_j_11 = -_2q2;
+        f_j_12 =  _2q3;
+        f_j_13 = -_2q0;
+        f_j_14 =  _2q1; //////
+        f_j_21 = _2q1;
+        f_j_22 = _2q0;
+        f_j_23 = _2q3;
+        f_j_24 = _2q2;///////
+        f_j_31 = 0;
+        f_j_32 = -4 * q1;
+        f_j_33 = -4 * q2;
+        f_j_34 = 0; /////////////
+        f_j_41 = -2 * bz * q2;
+        f_j_42 = 2 * bz * q3;
+        f_j_43 = -4 * bx * q2 - 2 * bz * q0;
+        f_j_44 = -4 * bx * q3 + 2 * bz * q1;////////////
+        f_j_51 = -2 * bx * q3 + 2 * bz * q1;
+        f_j_52 =  2 * bx * q2 + 2 * bz * q0;
+        f_j_53 =  2 * bx * q1 + 2 * bz * q3;
+        f_j_54 = -2 * bx * q0 + 2 * bz * q2;///////////
+        f_j_61 = 2 * bx * q2;
+        f_j_62 = 2 * bx * q3 - 4 * bz * q1;
+        f_j_63 = 2 * bx * q0 - 4 * bz * q2;
+        f_j_64 = 2 * bx * q1;///////////
+
+        double f_f_1 = 2.0 * q1 * q3 - 2.0 * q0 * q2 - ax,
+               f_f_2 = 2.0 * q0 * q1 + 2.0 * q2 * q3 - ay,
+               f_f_3 = 1.0 - 2.0 * q1 * q1 - 2.0 * q2 * q2 - az,
+               f_f_4 = 2 * bx * (0.5 - q2 * q2 - q3 * q3) + 2 * bz * (q1 * q3 - q0 * q2)        - mx,
+               f_f_5 = 2 * bx * (q1 * q2 - q0 * q3)       + 2 * bz * (q0 * q1 + q2 * q3)        - my,
+               f_f_6 = 2 * bx * (q0 * q2 + q1 * q3)       + 2 * bz * (0.5 - q1 * q1 - q2 * q2)  - mz;
         // Gradient decent algorithm corrective step
 //        s0 = -_2q2 * (2.0f * q1q3 - _2q0q2 - ax) + _2q1 * (2.0f * q0q1 + _2q2q3 - ay) - _2bz * q2 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
 //        s1 = _2q3 * (2.0f * q1q3 - _2q0q2 - ax) + _2q0 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q1 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + _2bz * q3 * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
 //        s2 = -_2q0 * (2.0f * q1q3 - _2q0q2 - ax) + _2q3 * (2.0f * q0q1 + _2q2q3 - ay) - 4.0f * q2 * (1 - 2.0f * q1q1 - 2.0f * q2q2 - az) + (-_4bx * q2 - _2bz * q0) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (_2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
 //        s3 = _2q1 * (2.0f * q1q3 - _2q0q2 - ax) + _2q2 * (2.0f * q0q1 + _2q2q3 - ay) + (-_4bx * q3 + _2bz * q1) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1 * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s0 = -_2q2 * (2.0f * q1q3 - 2.0f * q0q2 - ax) + _2q1 * (2.0f * q0q1 + 2.0f * q2q3 - ay)                                                       - _2bz * q2                * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2               * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s1 =  _2q3 * (2.0f * q1q3 - 2.0f * q0q2 - ax) + _2q0 * (2.0f * q0q1 + 2.0f * q2q3 - ay) - 4.0f * q1 * (1.0f - 2.0f * q1q1 - 2.0f * q2q2 - az) + _2bz * q3                * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + ( _2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s2 = -_2q0 * (2.0f * q1q3 - 2.0f * q0q2 - ax) + _2q3 * (2.0f * q0q1 + 2.0f * q2q3 - ay) - 4.0f * q2 * (1.0f - 2.0f * q1q1 - 2.0f * q2q2 - az) + (-_4bx * q2 - _2bz * q0) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + ( _2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
-        s3 =  _2q1 * (2.0f * q1q3 - 2.0f * q0q2 - ax) + _2q2 * (2.0f * q0q1 + 2.0f * q2q3 - ay)                                                       + (-_4bx * q3 + _2bz * q1) * (_2bx * (0.5f - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1               * (_2bx * (q0q2 + q1q3) + _2bz * (0.5f - q1q1 - q2q2) - mz);
+//        s0 = (-_2q2) * (2.0 * q1q3 - 2.0 * q0q2 - ax) + _2q1 * (2.0 * q0q1 + 2.0 * q2q3 - ay)                                                   - _2bz * q2               * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q3 + _2bz * q1) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q2               * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz);
+//        s1 = ( _2q3) * (2.0 * q1q3 - 2.0 * q0q2 - ax) + _2q0 * (2.0 * q0q1 + 2.0 * q2q3 - ay) - 4.0 * q1 * (1.0 - 2.0 * q1q1 - 2.0 * q2q2 - az) + _2bz * q3               * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + ( _2bx * q2 + _2bz * q0) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q3 - _4bz * q1) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz);
+//        s2 = (-_2q0) * (2.0 * q1q3 - 2.0 * q0q2 - ax) + _2q3 * (2.0 * q0q1 + 2.0 * q2q3 - ay) - 4.0 * q2 * (1.0 - 2.0 * q1q1 - 2.0 * q2q2 - az) - (_4bx * q2 + _2bz * q0) * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + ( _2bx * q1 + _2bz * q3) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + (_2bx * q0 - _4bz * q2) * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz);
+//        s3 = ( _2q1) * (2.0 * q1q3 - 2.0 * q0q2 - ax) + _2q2 * (2.0 * q0q1 + 2.0 * q2q3 - ay)                                                   - (_4bx * q3 + _2bz * q1) * (_2bx * (0.5 - q2q2 - q3q3) + _2bz * (q1q3 - q0q2) - mx) + (-_2bx * q0 + _2bz * q2) * (_2bx * (q1q2 - q0q3) + _2bz * (q0q1 + q2q3) - my) + _2bx * q1               * (_2bx * (q0q2 + q1q3) + _2bz * (0.5 - q1q1 - q2q2) - mz);
+        s0 = f_j_11 * f_f_1 + f_j_21 * f_f_2 + f_j_31 * f_f_3 + f_j_41 * f_f_4 + f_j_51 * f_f_5 + f_j_61 * f_f_6;
+        s1 = f_j_12 * f_f_1 + f_j_22 * f_f_2 + f_j_32 * f_f_3 + f_j_42 * f_f_4 + f_j_52 * f_f_5 + f_j_62 * f_f_6;
+        s2 = f_j_13 * f_f_1 + f_j_23 * f_f_2 + f_j_33 * f_f_3 + f_j_43 * f_f_4 + f_j_53 * f_f_5 + f_j_63 * f_f_6;
+        s3 = f_j_14 * f_f_1 + f_j_24 * f_f_2 + f_j_34 * f_f_3 + f_j_44 * f_f_4 + f_j_54 * f_f_5 + f_j_64 * f_f_6;
         recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
-        s0 *= -recipNorm;
-        s1 *= -recipNorm;
-        s2 *= -recipNorm;
-        s3 *= -recipNorm;
+        s0 *= recipNorm;
+        s1 *= recipNorm;
+        s2 *= recipNorm;
+        s3 *= recipNorm;
 
         // Apply feedback step
         qDot1 -= beta * s0;
@@ -128,13 +174,14 @@ void Madgwick::MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float 
     q1 *= recipNorm;
     q2 *= recipNorm;
     q3 *= recipNorm;
+
 }
 
-void Madgwick::MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
-    float recipNorm;
-    float s0, s1, s2, s3;
-    float qDot1, qDot2, qDot3, qDot4;
-    float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
+void Madgwick::MadgwickAHRSupdateIMU(double gx, double gy, double gz, double ax, double ay, double az) {
+    double recipNorm;
+    double s0, s1, s2, s3;
+    double qDot1, qDot2, qDot3, qDot4;
+    double _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
 
     gx = degrees_to_radians(gx);
     gy = degrees_to_radians(gy);
@@ -200,28 +247,33 @@ void Madgwick::MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, flo
     q1 *= recipNorm;
     q2 *= recipNorm;
     q3 *= recipNorm;
+
+    q0 = (int)(q0 * 100000) / 100000.0;
+    q1 = (int)(q1 * 100000) / 100000.0;
+    q2 = (int)(q2 * 100000) / 100000.0;
+    q3 = (int)(q3 * 100000) / 100000.0;
 }
 
-//void Madgwick::compute_orientation(float *q){
+//void Madgwick::compute_orientation(double *q){
 //    yaw  = radians_to_degrees(atan2(2*q[1]*q[2] + 2*q[0]*q[3], q[0]*q[0] + q[1]*q[1] - q[2]*q[2] -q[3]*q[3]));
 //    pitch = radians_to_degrees(-1*asin(2*(q[1]*q[3] - q[0]*q[2])));
 //    roll = radians_to_degrees(atan2(2*q[0]*q[1] + 2*q[2]*q[3], q[0]*q[0] + q[3]*q[3] - q[1]*q[1] - q[2]*q[2]));
 //}
 //
-//float* Madgwick::quaternionMul(float *q_1, float *q_2){
-//    float e_0, e_1, e_2, e_3;
+//double* Madgwick::quaternionMul(double *q_1, double *q_2){
+//    double e_0, e_1, e_2, e_3;
 //    e_0 = q_1[0]*q_2[0] - q_1[1]*q_2[1] - q_1[2]*q_2[2] - q_1[3]*q_2[3];
 //    e_1 = q_1[0]*q_2[1] - q_1[1]*q_2[0] - q_1[2]*q_2[3] - q_1[3]*q_2[2];
 //    e_2 = q_1[0]*q_2[2] - q_1[1]*q_2[3] - q_1[2]*q_2[0] - q_1[3]*q_2[1];
 //    e_3 = q_1[0]*q_2[3] - q_1[1]*q_2[2] - q_1[2]*q_2[1] - q_1[3]*q_2[0];
 //
-//    float result_quat[4] = {e_0, e_1, e_2, e_3};
+//    double result_quat[4] = {e_0, e_1, e_2, e_3};
 //    return result_quat;
 //}
 //
 //// should clear pointer after using this function
-//float* Madgwick::get_accel_jacobian(float *q){
-//    float *jacob_mat = (float *)malloc(3 * 4 * sizeof(float));
+//double* Madgwick::get_accel_jacobian(double *q){
+//    double *jacob_mat = (double *)malloc(3 * 4 * sizeof(double));
 //
 //    jacob_mat[0 ] = -2*q[2];
 //    jacob_mat[1 ] =  2*q[3];
@@ -242,8 +294,8 @@ void Madgwick::MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, flo
 //}
 
 // should clear pointer after using this function
-//float* Madgwick::get_accel_function(float *q, float *a){
-//    float *function = (float *)malloc(3 * sizeof(float));
+//double* Madgwick::get_accel_function(double *q, double *a){
+//    double *function = (double *)malloc(3 * sizeof(double));
 //
 //    function[0] = 2.0*(q[1]*q[3] - q[0]*q[2])       - a[1];
 //    function[1] = 2.0*(q[0]*q[1] + q[2]*q[3])       - a[2];
@@ -252,8 +304,8 @@ void Madgwick::MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, flo
 //    return function;
 //}
 //
-//void Madgwick::normalizeq(float *q){
-//    float q_length = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
+//void Madgwick::normalizeq(double *q){
+//    double q_length = sqrt(q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]);
 //    q[0] /= q_length;
 //    q[1] /= q_length;
 //    q[2] /= q_length;
@@ -284,7 +336,7 @@ void Madgwick::MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, flo
 /*                     Getters and Setters                      */
 /*==============================================================*/
 
-float Madgwick::get_roll(void){
+double Madgwick::get_roll(void){
     roll = radians_to_degrees(atan2(2 * this->q1 * this->q2 + 2 * this->q0 * this->q3, this->q0 * this->q0 + this->q1 * this->q1 - this->q2 * this->q2 - this->q3 * this->q3));
     return roll;
 }
@@ -294,7 +346,7 @@ void Madgwick::set_roll(int roll){
 }
 
 
-float Madgwick::get_pitch(void){
+double Madgwick::get_pitch(void){
     pitch = radians_to_degrees(-1 * asin(2 * (this->q1 * this->q3 - this->q0 * this->q2)));
     return pitch;
 }
@@ -304,7 +356,7 @@ void Madgwick::set_pitch(int pitch){
 }
 
 
-float Madgwick::get_yaw(void){
+double Madgwick::get_yaw(void){
     yaw = radians_to_degrees(atan2(2 * this->q1 * this->q2 + 2* this->q0 * this->q3, this->q0 * this->q0 + this->q1 * this->q1 - this->q2 * this->q2 - this->q3 * this->q3));
     return yaw;
 }
@@ -314,17 +366,17 @@ void Madgwick::set_yaw(int yaw){
 }
 
 
-float Madgwick::get_beta(void){
+double Madgwick::get_beta(void){
     return beta;
 }
 
-void Madgwick::set_beta(float beta){
+void Madgwick::set_beta(double beta){
     this->beta = beta;
 }
 
 
-float* Madgwick::get_q(void){
-    static float quaternion[4];
+double* Madgwick::get_q(void){
+    static double quaternion[4];
     quaternion[0] = q0;
     quaternion[1] = q1;
     quaternion[2] = q2;
@@ -333,7 +385,7 @@ float* Madgwick::get_q(void){
     return quaternion;
 }
 
-void Madgwick::set_q(float q_0, float q_1, float q_2, float q_3){
+void Madgwick::set_q(double q_0, double q_1, double q_2, double q_3){
     q0 = q_0;
     q1 = q_1;
     q2 = q_2;
@@ -344,22 +396,28 @@ void Madgwick::set_q(float q_0, float q_1, float q_2, float q_3){
 /*                      Private Functions                       */
 /*==============================================================*/
 
-float Madgwick::radians_to_degrees(float radian_val){
-    float degree_val = radian_val*180/3.1415;
+double Madgwick::radians_to_degrees(double radian_val){
+    double degree_val = radian_val*180/3.1415;
     return degree_val;
 }
 
-float Madgwick::degrees_to_radians(float degree_val) {
-    float radian_val = degree_val*3.1415/180;
+double Madgwick::degrees_to_radians(double degree_val) {
+    double radian_val = degree_val * M_PI / 180.0;
     return radian_val;
 }
 
-float Madgwick::invSqrt(float x) {
-    float halfx = 0.5f * x;
-    float y = x;
-    long i = *(long*)&y;
-    i = 0x5f3759df - (i>>1);
-    y = *(float *)&i;
-    y = y * (1.5f - (halfx * y * y));
-    return y;
+//double Madgwick::invSqrt(double x) {
+//    double halfx = 0.5f * x;
+//    double y = x;
+//    long i = *(long*)&y;
+//    i = 0x5f3759df - (i>>1);
+//    y = *(double *)&i;
+//    y = y * (1.5f - (halfx * y * y));
+//    return y;
+//}
+
+double Madgwick::invSqrt(double x) {
+    double sq_rt =  sqrt(x);
+    double inv_sqrt = 1/sq_rt;
+    return inv_sqrt;
 }
