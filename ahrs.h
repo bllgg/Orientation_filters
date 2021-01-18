@@ -64,7 +64,7 @@ private:
     double      beta = 0.5;
     double      q0 = 1.0 , q1 = 0.0 , q2 = 0.0, q3 = 0.0;
     int         roll = 0, pitch = 0, yaw = 0;
-    double      sampleFreq = 10.0;
+    double      time_interval = 0.1;
 
     /*==============================================================*/
     /*                      Private Functions                       */
