@@ -52,20 +52,25 @@ int main() {
         mag_z = (int)(round(mag_z * 1000)) / 1000.0;
 
 //        MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
-        for (int i = 0; i < 1; i++) {
-            sensor_fusion.MadgwickAHRSupdate(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z, mag_x, mag_y, mag_z);
-//            sensor_fusion.MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
+        for (int i = 0; i < 10; i++) {
+            sensor_fusion.MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
+            double *current_quaternioun;
+            current_quaternioun = sensor_fusion.get_q();
+            cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << endl;
+            //            sensor_fusion.MadgwickAHRSupdateIMU(gyr_x, gyr_y, gyr_z, acc_x, acc_y, acc_z);
 
         }
+        cout << "The iteration is over \n" << endl;
         double roll = sensor_fusion.get_roll();
         double pitch = sensor_fusion.get_pitch();
         double yaw = sensor_fusion.get_yaw();
-        double *current_quaternioun;
-        current_quaternioun = sensor_fusion.get_q();
+//        double *current_quaternioun;
+//        current_quaternioun = sensor_fusion.get_q();
+//        cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << endl;
+
 //        cout << roll << "," << pitch << "," << yaw <<endl;
 //        cout << roll << "," << pitch <<endl;
 
-        cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << endl;
 //        cout << current_quaternioun[0] << "," << current_quaternioun[1] << "," << current_quaternioun[2] << "," << current_quaternioun[3] << "\n" <<endl;
 
     }
